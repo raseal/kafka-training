@@ -68,7 +68,7 @@ bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic topic1
 # with keys (assuming the separator is the ":" character)
 bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic topic2 --property parse.key=true --property key.separator=":"
 
-> key1:aaaa
+>key1:aaaa
 >key2:bbbbb
 >key1:AAAA
 ```
@@ -84,4 +84,36 @@ bin/kafka-server-stop.sh
 bin/zookeeper-server-stop.sh
 ```
 ----
-# 2nd session
+# 2nd session: Producers
+This session is about producers:
+- basic producer (sync type: it sends a message and waits until it is received by the broker)
+- async (the message is sent, and we can configure the producer to not waiting the ACK)
+
+When publishing messages the flow is as follows:
+![diagram](diagram.png)
+
+Inside the `code/2` you'll find some producers, each representing a different scenario:
+| Producer                  | Notes                                                                                                             |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------|
+|  BasicProducer            | Producer with simple message                                                                                      |
+|  BasicHeaderProducer      | Producer with simple message and headers                                                                          |
+|  AsyncProducer            | Async producer with simple message                                                                                |
+|  AckProducer              | Producer with simple message specifying the ACK method                                                            |
+|  CustomSerializerProducer | Producer with custom serializer                                                                                   |
+|  InterceptorProducer      | Producer with custom interceptor                                                                                  |
+|  BatchProducer            | Producer with basic batch config (it waits 20 seconds before sending messages)                                    |
+|  BatchProProducer         | Producer with batch config (it sends messages once one condition is met: max waiting time or batch size exceeded) |
+
+## Quick notes 
+- Kafka always assure you messages are received in the same order they ere sent.
+- It is a good practice to **always** specify a `client.id` to allow tracing the messages (e.g.`ServiceName-Hostname`).
+- Each `ACKS` value has it own purposes:
+  - `1`: Waits until the broker confirms the message has arrived
+  - `all`: Waits until server confirms message has arrived AT ALL replicas. It's the safest way but also the slowest.
+  - `0`: Don't expect any confirmation. It's the fastest way.
+- Usually an `interceptor` acts as a middleware executing at specific moments. You should NOT abuse interceptors because they can slow the message flow.
+- Using `batches` can improve performance A LOT since it sends X messages at once, not one by one.
+- When defining a producer you can configure the batch behavior: if there are more than 2 conditions (time or batch size),the batch will be sent once the first condition is met. 
+
+----
+# 3rd session
