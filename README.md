@@ -90,7 +90,7 @@ This session is about producers:
 - async (the message is sent, and we can configure the producer to not waiting the ACK)
 
 When publishing messages the flow is as follows:
-![diagram](diagram.png)
+![diagram](img/diagram.png)
 
 Inside the `code/2` you'll find some producers, each representing a different scenario:
 | Producer                  | Notes                                                                                                             |
@@ -114,6 +114,52 @@ Inside the `code/2` you'll find some producers, each representing a different sc
 - Usually an `interceptor` acts as a middleware executing at specific moments. You should NOT abuse interceptors because they can slow the message flow.
 - Using `batches` can improve performance A LOT since it sends X messages at once, not one by one.
 - When defining a producer you can configure the batch behavior: if there are more than 2 conditions (time or batch size),the batch will be sent once the first condition is met. 
+- Quotas: https://kafka.apache.org/documentation/#quotas
+----
+# 3rd session: Consumers
+This session is about consumers. It is possible to define our custom deserializers and our own listeners if we want to work with the partitions, but this is not usual.
+
+There are three key concepts when dealing with consumers:
+- Re-balancing strategies
+- Consumer performance
+- Commits (to indicate the broker the consumer has successfully received the messages)
+
+## Re-balancing strategies
+Kafka has 4 pre-built strategies:
+![diagram](img/rangeAssign.png)
+`rangeAssignor`: Creates groups and assign each group among the consumers.
+What if we have 5 partitions and 2 consumers? This assignor will assign one group more to the first consumer.
+
+![diagram](img/roundRobinAssign.png)
+`roundrobinAssignor`: It tries to fairly assign the partitions among the consumers.
+
+![diagram](img/stickyAssign.png)
+`stickyAssignor`: It works as the `roundRobin` but instead of instantly assign the partitions to a new consumer, he "waits" a little just in case the old consumers returns.
+
+`cooperativeStickyAssignor`: It works as the previous one, but it assigns the partitions to the consumer with less workload.
+
+## Consumer performance
+We can manipulate the behavior of the consumers by limiting the maximum of messages they can handle, the time they have to retrieve the messages or even close them after a certain amount of time.
+|   | Property                 | Description                                                                                                 |
+| 1 | `fetch.min.bytes`        | Only consumes if message has, AT LEAST, this amount of bytes                                                |
+| 2 | `fetch.max.wait.ms`      | Only consumes if we exceed the specified amount of time without handling messages                           | 
+| 3 | `fetch.max.bytes`        | Don't consume messages / blocks bigger than this amount of bytes                                            |
+| 4 | `max.poll.records`       | Amount of messages consumed at once (it takes the next block of X messages when the current block finishes) |
+| 5 | `heartbeat.interval.ms`  | The consumer "pìngs" to the server in order to communicate he is alive                                      |
+| 6 | `session.timeout.ms`     | Amount of time the consumer has to show activity, or it will be closed                                      |
+| 7 | `default.api.timeout.ms` | This handles all the remaining timeouts a consumer have                                                     |
+| 8 | `request.timeout.ms`     | Max amount of time the consumer has to perform a request                                                    |
+
+- Properties `1` and `2` usually come together: e.g., if the timeout finishes but no message was consumed due to the config of `1`, the `2` will force starting consuming messages.
+- It is recommended that property `6` has three times the value `5` have. This way we can assure three "dead pulses" before closing the connection.  
+
+### Handling with a limited number of consumers
+If we have a static number of consumers (four, five...) we can assign each one specific key (via the `group.instance.id` property). Kafka will make sure there will NOT be two consumers with the same ID (see the `code/3/StaticConsumer.java` for details).
+
+## Commits
+By default, the consumer commits when a message is successfully retrieved from the server. This can be changed va the `enable.auto.commit` property.
+
+We can modify this behavior if we want to improve the performance. See the `code/3/CommitConsumer.java` for details. 
 
 ----
-# 3rd session
+# 4th session: 
