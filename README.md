@@ -130,8 +130,10 @@ Kafka has 4 pre-built strategies:
 `rangeAssignor`: Creates groups and assign each group among the consumers.
 What if we have 5 partitions and 2 consumers? This assignor will assign one group more to the first consumer.
 
+
 ![diagram](img/roundRobinAssign.png)
 `roundrobinAssignor`: It tries to fairly assign the partitions among the consumers.
+
 
 ![diagram](img/stickyAssign.png)
 `stickyAssignor`: It works as the `roundRobin` but instead of instantly assign the partitions to a new consumer, he "waits" a little just in case the old consumers returns.
@@ -141,6 +143,7 @@ What if we have 5 partitions and 2 consumers? This assignor will assign one grou
 ## Consumer performance
 We can manipulate the behavior of the consumers by limiting the maximum of messages they can handle, the time they have to retrieve the messages or even close them after a certain amount of time.
 |   | Property                 | Description                                                                                                 |
+|---|--------------------------|-------------------------------------------------------------------------------------------------------------|
 | 1 | `fetch.min.bytes`        | Only consumes if message has, AT LEAST, this amount of bytes                                                |
 | 2 | `fetch.max.wait.ms`      | Only consumes if we exceed the specified amount of time without handling messages                           | 
 | 3 | `fetch.max.bytes`        | Don't consume messages / blocks bigger than this amount of bytes                                            |
